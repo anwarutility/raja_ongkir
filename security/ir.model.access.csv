@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_api_list,access_api_list,model_api_list,,1,1,1,1
+access_res_country_city,access_res_country_city,model_res_country_city,,1,1,1,1
+access_res_city_subdistrict,access_res_city_subdistrict,model_res_city_subdistrict,,1,1,1,1
+access_ongkir_list,access_ongkir_list,model_ongkir_list,,1,1,1,1

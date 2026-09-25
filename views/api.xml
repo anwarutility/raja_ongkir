@@ -1,0 +1,118 @@
+<odoo>
+  <data>
+
+    <record id="api_list_view_form" model="ir.ui.view">
+      <field name="name">API Raja Ongkir</field>
+      <field name="model">api.list</field>
+      <field name="arch" type="xml">
+        <form string="API Raja Ongkir">
+          <header>
+            <button name="sync_province" string="Sync Province" type="object" class="btn-primary"/>
+            <button name="sync_city" string="Sync City" type="object" class="btn-primary"/>
+            <button name="sync_subdistrict" string="Sync Subdistrict" type="object" class="btn-primary"/>
+          </header>
+          <sheet>
+            <div class="oe_button_box" name="button_box" icon="fa-users">
+              <field string="Enable" name="status" invisible="1"/>
+              <button class="oe_stat_button" name="btn_status" type="object"
+                      attrs="{'invisible': [('status','=','disable')]}"
+                      icon="fa-check-circle" help="Set as Disable" string="Disable">
+              </button>
+              <button class="oe_stat_button" name="btn_status" type="object"
+                      attrs="{'invisible': [('status','=','enable')]}"
+                      icon="fa-check-circle" help="Set as Disable" string="Enable">
+              </button>
+            </div>
+            <group>
+              <group name="api_data" string="Configuration API">
+                <field name="name" attrs="{
+                      'readonly': [('status', '=', 'enable'),],
+                      'required': [('status', '=', 'disable')],
+                      }"/>
+                <field name="api_key" attrs="{
+                      'readonly': [('status', '=', 'enable'),],
+                      'required': [('status', '=', 'disable')],
+                      }"/>
+                <field name="api_url" attrs="{
+                      'readonly': [('status', '=', 'enable'),],
+                      'required': [('status', '=', 'disable')],
+                      }"/>
+              </group>
+              <group name="origin_destination" string="Origin and Destination">
+                <field name="origin_city_type_default" attrs="{
+                      'readonly': [('status', '=', 'enable'),],
+                      'required': [('status', '=', 'disable')]
+                      }"/>
+                <field name="origin_city_id" attrs="{
+                      'readonly': [('status', '=', 'enable'),]
+                      }"
+                      options='{"no_open": True, "no_create": True}'/>
+                <field name="origin_subdistrict_id" attrs="{
+                      'readonly': [('status', '=', 'enable')],
+                      'invisible': [('origin_city_type_default', '=', 'city')]
+                      }"
+                      options='{"no_open": True, "no_create": True}'/>
+                <field name="origin_courier" attrs="{
+                      'readonly': [('status', '=', 'enable')],
+                      'required': [('status', '=', 'disable')],
+                      }"/>
+                <field name="destination_city_type_default" attrs="{
+                      'readonly': [('status', '=', 'enable'),],
+                      'required': [('status', '=', 'disable')]
+                      }"/>
+              </group>
+            </group>
+            <group>
+              <group name="accounting" string="Accounting Delivery Cost">
+                <field name="partner_delivery_cost_id" attrs="{
+                      'readonly': [('status', '=', 'enable')],
+                      'required': [('status', '=', 'disable')],
+                      }"/>
+                <field name="product_delivery_cost_id" attrs="{
+                      'readonly': [('status', '=', 'enable')],
+                      'required': [('status', '=', 'disable')],
+                      }"/>
+                <field name="account_delivery_cost_id" attrs="{
+                      'readonly': [('status', '=', 'enable')],
+                      'required': [('status', '=', 'disable')],
+                      }"/>
+              </group>
+            </group>
+          </sheet>
+        </form>
+      </field>
+    </record>
+
+    <record id="api_form" model="ir.ui.view">
+      <field name="name">API Raja Ongkir</field>
+      <field name="model">api.list</field>
+      <field name="arch" type="xml">
+        <tree>
+          <field name="name"/>
+          <field name="api_key"/>
+          <field name="api_url"/>
+          <field name="status"/>
+        </tree>
+      </field>
+    </record>
+
+    <record id="api_menu_list_window" model="ir.actions.act_window">
+      <field name="name">Api Raja Ongkir</field>
+      <field name="res_model">api.list</field>
+      <field name="type">ir.actions.act_window</field>
+      <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_rajaongkir_config"
+              name="Raja Ongkir"
+              parent="stock.menu_stock_config_settings"
+              sequence="1"/>
+
+    <menuitem id="api_rajaongkir_menu"
+              name="Api"
+              parent="menu_rajaongkir_config"
+              action="api_menu_list_window"
+              sequence="1"/>
+
+  </data>
+</odoo>

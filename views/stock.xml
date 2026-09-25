@@ -1,0 +1,87 @@
+<odoo>
+  <data>
+    <record id="stock_picking" model="ir.ui.view">
+      <field name="name">stock.picking.inherit.view.form</field>
+      <field name="model">stock.picking</field>
+      <field name="inherit_id" ref="stock.view_picking_form"/>
+      <field name="arch" type="xml">
+        <xpath expr="//notebook" position="inside">
+          <page string="Cost Delivery" attrs="{'invisible': [('sale_id', '=', False)]}">
+            <group name="destination" string="Destination">
+              <group>
+                <field name="sale_id" invisible="1"/>
+                <field name="has_bill" invisible="1"/>
+                <field name="city_id"/>
+                <field name="subdistrict_id"/>
+                <field name="bill_delivery_id" readonly="1"/>
+                <label for="weight_total"/>
+                <div class="o_row" name="weight">
+                  <field name="weight_total" class="oe_inline"/>
+                  <span>kg</span>
+                </div>
+              </group>
+            </group>
+            <group>
+              <group name="estimation_cost" string="Estimation Cost">
+                <field name="currency_id" invisible="1"/>
+                <field name="courier" string="Courier" options="{'no_create': True}"/>
+                <field name="courier_name" string="Courier Name"/>
+                <field name="service_name"/>
+                <field name="cost_delivery"/>
+                <label for="etd"/>
+                <div class="o_row" name="etd_estimation">
+                  <field name="etd" class="oe_inline"/>
+                  <span>days</span>
+                </div>
+                <button string="Choose Service / Compute Cost" name="compute_estimation_ongkir" type="object" class="btn btn-primary" attrs="{'invisible': [('has_bill', '=', True)]}"/>
+              </group>
+              <group name="realitation_cost" string="Realitation Cost">
+                <field name="realitation_courier_name" string="Courier Name" attrs="{'readonly': [('has_bill', '=', True)]}"/>
+                <field name="realitation_service_name" string="Service Name" attrs="{'readonly': [('has_bill', '=', True)]}"/>
+                <field name="realitation_cost_delivery" string="Cost Delivery" attrs="{'readonly': [('has_bill', '=', True)]}"/>
+                <label for="realitation_etd" string="ETD"/>
+                <div class="o_row" name="etd_realitation">
+                  <field name="realitation_etd" class="oe_inline" attrs="{'readonly': [('has_bill', '=', True)]}"/>
+                  <span>days</span>
+                </div>
+                <button string="List All Cost" name="getBiaya" type="object" class="btn btn-primary" attrs="{'invisible': [('has_bill', '=', True)]}"/>
+                <button string="Validate Cost" name="create_delivery_bill" type="object" class="btn btn-primary" attrs="{'invisible': [('has_bill', '=', True)]}"/>
+              </group>
+            </group>
+          </page>
+        </xpath>
+        
+      </field>
+    </record>
+    <record model="ir.ui.view" id="ongkir_list">
+      <field name="name">List Ongkir</field>
+      <field name="model">ongkir.list</field>
+      <field name="arch" type="xml">
+        <tree default_order='value'>
+          <field name="name"/>
+          <field name="service"/>
+          <field name="value"/>
+          <field name="etd"/>
+          <button name="pilihLayanan" string="Pilih" type="object"/>
+        </tree>
+      </field>
+    </record>
+
+    <record id="view_move_form_inherit_ref_clickable" model="ir.ui.view">
+      <field name="name">account.move.form.inherit.ref.clickable</field>
+      <field name="model">account.move</field>
+      <field name="inherit_id" ref="account.view_move_form" />
+      <field name="arch" type="xml">
+        <xpath expr="//field[@name='ref']" position="after">
+          <field name="picking_id" string="GD/OUT Number"
+            context="{'form_view_ref': 'stock.view_picking_form'}" options="{'no_create': True}"
+            widget="many2one" placeholder="Link to related GD/Out (Ongkos Kirim)" />
+        </xpath>
+        <xpath expr="//sheet/group/group[2]/label[@for='invoice_date']" position="before">
+          <field name="source_document" placeholder="e.g. PO0032" />
+        </xpath>
+      </field>
+    </record>
+
+  </data>
+</odoo>

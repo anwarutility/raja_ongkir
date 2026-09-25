@@ -1,0 +1,33 @@
+<odoo>
+  <data>
+
+    <record id="city_list" model="ir.ui.view">
+      <field name="name">City List</field>
+      <field name="model">res.country.city</field>
+      <field name="arch" type="xml">
+        <tree editable="bottom" duplicate="false">
+          <field name="name"/>
+          <field name="province_rel"/>
+          <field name="province_id"/>
+          <field name="city_id"/>
+          <field name="postal_code"/>
+          <field name="type"/>
+        </tree>
+      </field>
+    </record>
+
+    <record id="city_list_menu_window" model="ir.actions.act_window">
+      <field name="name">City</field>
+      <field name="res_model">res.country.city</field>
+      <field name="type">ir.actions.act_window</field>
+      <field name="view_mode">tree</field>
+    </record>
+
+    <menuitem id="city_rajaongkir_menu"
+              name="City"
+              parent="menu_rajaongkir_config"
+              action="city_list_menu_window"
+              sequence="3"/>
+
+  </data>
+</odoo>

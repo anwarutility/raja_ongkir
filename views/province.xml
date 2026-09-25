@@ -1,0 +1,22 @@
+<odoo>
+  <data>
+
+    <record id="view_country_state_tree_inherit" model="ir.ui.view">
+        <field name="name">res.country.state.tree</field>
+        <field name="model">res.country.state</field>
+        <field name="inherit_id" ref="base.view_country_state_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="before">
+              <field name="province_id"/>
+            </xpath>
+        </field>
+    </record>
+
+    <menuitem id="menu_country_state_partner"
+        name="Province"
+        action="base.action_country_state"
+        parent="menu_rajaongkir_config"
+        sequence="2"/>
+
+  </data>
+</odoo>

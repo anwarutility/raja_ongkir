@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <record id="view_order_form_inherit" model="ir.ui.view">
+      <field name="name">sale.order.form</field>
+      <field name="model">sale.order</field>
+      <field name="inherit_id" ref="sale.view_order_form"/>
+      <field name="priority" eval="8"/>
+      <field name="arch" type="xml">
+        <xpath expr="//button[@name='action_draft']" position="after">
+          <button name="compute_ongkir" type="object" string="Compute Cost Delivery" class="btn btn-primary"
+          attrs="{'invisible': [('state', 'in', ('sale', 'done','cancel'))]}"/>
+        </xpath>
+        <xpath expr="//field[@name='payment_term_id']" position="after">
+          <field name="raja_ongkir_api" options='{"no_open": True, "no_create": True}'
+                 domain="[('status', '=', 'enable')]"
+                 attrs="{'readonly': [('state', 'in', ('sale', 'done','cancel'))]}"/>
+          <field name="destination_city_type" invisible="1"/>
+          <field name="origin_courier" invisible="1"/>
+          <field name="city_id" options='{"no_open": True, "no_create": True}'
+                 attrs="{
+                  'readonly': [('state', 'in', ('sale', 'done','cancel'))],
+                  'invisible': [('raja_ongkir_api', '=', False)]
+                  }"/>
+          <field name="subdistrict_id" options='{"no_open": True, "no_create": True}'
+                 attrs="{
+                  'readonly': [('state', 'in', ('sale', 'done','cancel'))],
+                  'invisible': ['|', ('destination_city_type', '!=', 'subdistrict'),('raja_ongkir_api', '=', False)]
+                  }"/>
+        </xpath>
+        <xpath expr="//notebook/page/field[@name='order_line']/tree/field[@name='product_uom_qty']" position="after">
+          <field name="weight"/>
+          <field name="weight_subtotal"/>
+        </xpath>
+        <xpath expr="//field[@name='note']" position="after">
+            <label for="weight_total"/>
+            <div class="o_row" name="weight">
+              <field name="weight_total" class="oe_inline"/>
+              <span>kg</span>
+            </div>
+            <field name="courier_name" readonly="1" force_save="1" attrs="{'invisible': [('raja_ongkir_api', '=', False)]}"/>
+            <field name="service_name" readonly="1" force_save="1" attrs="{'invisible': [('raja_ongkir_api', '=', False)]}"/>
+            <field name="cost_delivery" readonly="1" force_save="1" attrs="{'invisible': [('raja_ongkir_api', '=', False)]}"/>
+            <label for="etd" attrs="{'invisible': [('raja_ongkir_api', '=', False)]}"/>
+            <div class="o_row" name="etd" attrs="{'invisible': [('raja_ongkir_api', '=', False)]}">
+              <field name="etd" readonly="1" force_save="1" class="oe_inline"/>
+              <span>days</span>
+            </div>
+        </xpath>
+      </field>
+    </record>
+  </data>
+</odoo>
