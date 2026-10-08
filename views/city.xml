@@ -12,6 +12,7 @@
           <field name="city_id"/>
           <field name="postal_code"/>
           <field name="type"/>
+          <field name="biteship_area_id" optional="show"/>
         </tree>
       </field>
     </record>

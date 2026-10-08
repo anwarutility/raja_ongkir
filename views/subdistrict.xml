@@ -11,6 +11,7 @@
           <field name="province_id"/>
           <field name="city_id"/>
           <field name="subdistrict_id"/>
+          <field name="biteship_area_id" optional="show"/>
         </tree>
       </field>
     </record>

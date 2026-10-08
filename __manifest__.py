@@ -1,15 +1,19 @@
 # -*- coding: utf-8 -*-
 {
-    'name': "Raja Ongkir",
+    'name': "Biteship",
     'summary': """
         Cek ongkos kirim.""",
     'description': """
-        Module untuk mengecek biaya kirim pada suatu kabupaten/kota.
+        Cek biaya kirim dari Sales Order dan Delivery Order.
+
+        Provider dipilih dari field "API Url" pada konfigurasi:
+        Biteship (api.biteship.com), RajaOngkir (pro.rajaongkir.com),
+        atau Komerce (rajaongkir.komerce.id).
     """,
     'author': "Legian Wahyu P",
     'website': "",
     'category': 'Inventory',
-    'version': '0.5',
+    'version': '16.0.1.1.0',
     'depends': ['base', 'stock', 'sale', 'sale_stock'],
     'data': [
         'security/ir.model.access.csv',

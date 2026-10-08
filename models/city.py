@@ -12,3 +12,8 @@ class StateCity(models.Model):
     type = fields.Char(string="Type")
     name = fields.Char(string="Name", required=True)
     postal_code = fields.Char(string="Postal Code")
+    biteship_area_id = fields.Char(
+        string="Biteship Area ID",
+        help="Biteship area_id for this city, resolved on demand when the API "
+             "record points at Biteship (api.biteship.com). Biteship prices "
+             "routes by area_id, not by RajaOngkir city ids.")

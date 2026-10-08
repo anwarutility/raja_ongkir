@@ -4,6 +4,50 @@ import json
 import requests
 import math
 
+from .ongkir_utils import is_komerce, komerce_route, ongkir_url
+
+
+def _cost_value(value):
+    """Numeric cost out of an API answer, tolerating strings and nulls."""
+    try:
+        return float(value) if value is not None else 0.0
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def pick_service(results, wanted_service=None):
+    """Choose one rate row from a provider answer.
+
+    The service configured on the API record (``api.list.service``, default
+    ``REG``) is matched first. Providers name services differently -- Biteship
+    answers ``"Reguler"`` where RajaOngkir answers ``"REG"`` -- so an exact
+    match is tried before a prefix match ("REG" is a prefix of "REGULER").
+    Without that, configuring REG silently fell through to the cheapest service
+    and a quotation was priced with JNE Trucking instead of JNE Reguler.
+
+    Providers also do not return the configured service on every route --
+    Komerce answers ``CTC`` (JNE City Courier) for some destinations -- and
+    failing with "No service returned" left the Sales Order without any cost.
+    In that case the cheapest available service is used, so the button always
+    fills a usable rate instead of raising.
+    """
+    wanted = (wanted_service or 'REG').strip().upper()
+    for result in results:
+        if (result.get('service') or '').strip().upper() == wanted:
+            return result
+    if wanted:
+        for result in results:
+            service = (result.get('service') or '').strip().upper()
+            if service and (service.startswith(wanted) or wanted.startswith(service)):
+                return result
+    if not results:
+        return None
+    return min(
+        results,
+        key=lambda row: _cost_value(row.get('cost') or row.get('value')),
+    )
+
+
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
@@ -30,7 +74,18 @@ class SaleOrder(models.Model):
                 rec.city_id = rec.partner_id.city_id
                 rec.subdistrict_id = rec.partner_id.subdistrict_id
 
-    raja_ongkir_api = fields.Many2one(comodel_name='api.list', string='Raja Ongkir Api', ondelete='cascade')
+    @api.onchange('raja_ongkir_api')
+    def _onchange_raja_ongkir_api(self):
+        """Auto-default `origin_courier` to 'jne' when an API is selected."""
+        for rec in self:
+            if rec.raja_ongkir_api and not rec.origin_courier:
+                rec.origin_courier = 'jne'
+
+    def _default_raja_ongkir_api(self):
+        """Return the first enabled API, so every new Sales Order has an API set by default."""
+        return self.env['api.list'].search([('status', '=', 'enable')], limit=1)
+
+    raja_ongkir_api = fields.Many2one(comodel_name='api.list', string='Biteship Api', ondelete='cascade', default=_default_raja_ongkir_api)
     origin_city_type = fields.Char(compute='_get_raja_ongkir_api', string='Origin City Type', store=True)
     destination_city_type = fields.Char(compute='_get_raja_ongkir_api', string='Destination City Type', store=True)
     origin_courier = fields.Char(compute='_get_raja_ongkir_api', string='Origin Courier', store=True)
@@ -48,22 +103,72 @@ class SaleOrder(models.Model):
         res['domain'] = {'subdistrict_id': [('city_id', '=', self.city_id.city_id)]}
         return res
 
+    def _is_komerce(self, api):
+        """Komerce (rajaongkir.komerce.id) exposes a different API layout and
+        response format than the classic RajaOngkir (/api/cost)."""
+        return is_komerce(api.api_url)
+
+    def _ongkir_url(self, api, path):
+        """Build the endpoint URL, tolerating both the default RajaOngkir
+        layout (``https://pro.rajaongkir.com/api``) and full bases such as
+        ``https://rajaongkir.komerce.id/api/v1``."""
+        return ongkir_url(api.api_url, path)
+
+    def _ongkir_area(self, record, city_type):
+        """Describe one end of the route as an area dict.
+
+        Shape expected by ``stock.picking._fetch_ongkir_services``:
+        ``{'type', 'city_id', 'subdistrict_id', 'city_record',
+        'subdistrict_record'}``. Biteship needs the master records to resolve
+        its own ``area_id``, Komerce needs the ids.
+        """
+        if city_type == 'subdistrict' and record:
+            return {
+                'type': 'subdistrict',
+                'city_id': record.city_rel.city_id,
+                'subdistrict_id': record.subdistrict_id,
+                'city_record': record.city_rel,
+                'subdistrict_record': record,
+            }
+        return {
+            'type': 'city',
+            'city_id': record.city_id if record else None,
+            'subdistrict_id': None,
+            'city_record': record,
+            'subdistrict_record': None,
+        }
+
+    def _fetch_services(self, api, courier, origin_area, destination_area, weight):
+        """Delegate the provider call to ``stock.picking``.
+
+        The picking holds the multi-provider implementation (Biteship /
+        Komerce / classic RajaOngkir); reusing it keeps the Sales Order and
+        Delivery Order buttons on one code path instead of two that drift.
+        """
+        picking = self.env['stock.picking']
+        return picking._fetch_ongkir_services(
+            api, courier, origin_area, destination_area, weight)
+
     def compute_ongkir(self):
-        if not self.raja_ongkir_api :
+        if not self.raja_ongkir_api:
             raise UserError('Please charge the API or activate the API.')
 
-        api_key = self.raja_ongkir_api.api_key
-        api_url = self.raja_ongkir_api.api_url + "/api/cost"
+        api = self.raja_ongkir_api
         weight = self.weight_total * 1000
-        courier = self.origin_courier
+        # Default courier = JNE. Falls back to 'jne' when the API config has no
+        # courier set, so every Sales Order uses JNE unless changed explicitly.
+        courier = self.origin_courier or 'jne'
+
         if self.origin_city_type == 'city':
-            if not self.raja_ongkir_api.origin_city_id:
+            if not api.origin_city_id:
                 raise UserError('Please Set Origin City.')
-            origin = self.raja_ongkir_api.origin_city_id.city_id
+            origin = api.origin_city_id.city_id
         elif self.origin_city_type == 'subdistrict':
-            if not self.raja_ongkir_api.origin_subdistrict_id:
+            if not api.origin_subdistrict_id:
                 raise UserError('Please Set Origin Subdistrict.')
-            origin = self.raja_ongkir_api.origin_subdistrict_id.subdistrict_id
+            origin = api.origin_subdistrict_id.subdistrict_id
+        else:
+            raise UserError('Origin city type not configured on API.')
 
         if self.destination_city_type == 'city':
             if not self.city_id:
@@ -73,52 +178,62 @@ class SaleOrder(models.Model):
             if not self.subdistrict_id:
                 raise UserError('Please Set Destination Subdistrict.')
             destination = self.subdistrict_id.subdistrict_id
+        else:
+            raise UserError('Destination city type not configured on API.')
+
+        # Area descriptions for the provider call: Komerce needs ids that
+        # follow the area type (city vs kecamatan live in different id spaces),
+        # while Biteship needs the master records to resolve its own area_id.
+        origin_area = self._ongkir_area(
+            api.origin_subdistrict_id if self.origin_city_type == 'subdistrict'
+            else api.origin_city_id,
+            self.origin_city_type)
+        destination_area = self._ongkir_area(
+            self.subdistrict_id if self.destination_city_type == 'subdistrict'
+            else self.city_id,
+            self.destination_city_type)
+
         try:
-            headers = {
-                'content-type': 'application/x-www-form-urlencoded',
-                'key': api_key
-            }
-            data = "origin=%(origin)s&destination=%(destination)s&weight=%(weight)s&courier=%(courier)s&originType=%(originType)s&destinationType=%(destinationType)s" % {
-                "origin": origin,
-                "destination": destination,
-                "weight": weight,
-                "courier": courier,
-                "originType": self.origin_city_type,
-                "destinationType": self.destination_city_type
-            }
-            response = requests.post(api_url, headers=headers, data=data)
+            # Biteship prices by its own area_id and returns every service of
+            # the requested couriers in one call. The RajaOngkir/Komerce
+            # layouts are still supported: they are picked from `api.api_url`.
+            services = self._fetch_services(
+                api, courier, origin_area, destination_area, weight)
+            chosen = pick_service(services, api.service)
             compute_service_cost = {}
-            parsed_response = response.json()
-            if parsed_response['rajaongkir']['status']['code'] == 400:
-                raise UserError(parsed_response['rajaongkir']['status']['description'])
-            if parsed_response['rajaongkir']['status']['code'] == 200:
-                for results in parsed_response['rajaongkir']['results']:
-                    for costs in results['costs']:
-                        for cost in costs['cost']:
-                            if not compute_service_cost:
-                                compute_service_cost['code'] = results['code']
-                                compute_service_cost['name'] = results['name']
-                                compute_service_cost['service'] = costs['service']
-                                compute_service_cost['description'] = costs['description']
-                                compute_service_cost['value'] = cost['value']
-                                compute_service_cost['etd'] = cost['etd']
-                                compute_service_cost['note'] = cost['note']
-                            if compute_service_cost['value'] < cost['value']:
-                                compute_service_cost['code'] = results['code']
-                                compute_service_cost['name'] = results['name']
-                                compute_service_cost['service'] = costs['service']
-                                compute_service_cost['description'] = costs['description']
-                                compute_service_cost['value'] = cost['value']
-                                compute_service_cost['etd'] = cost['etd']
-                                compute_service_cost['note'] = cost['note']
+            if chosen:
+                compute_service_cost = {
+                    'code': chosen.get('code'),
+                    'name': chosen.get('name'),
+                    'service': chosen.get('service'),
+                    'description': chosen.get('description'),
+                    'value': _cost_value(chosen.get('value')),
+                    'etd': chosen.get('etd'),
+                    'note': chosen.get('note'),
+                }
+            if not compute_service_cost:
+                raise UserError(
+                    'No service returned by the shipping API for courier %s.' % courier
+                )
+
+            # Store the courier *code* the provider returned: Biteship and
+            # Komerce answer with their own code (jne, jnt, ...), which is what
+            # the stock.picking.courier selection expects. Imported locally to
+            # keep the model import order free of cycles.
+            from .stock import resolve_courier_code
+            resolved_courier = resolve_courier_code(
+                compute_service_cost.get('code'),
+                compute_service_cost.get('name')) or courier
             self.courier_name = compute_service_cost['name']
             self.service_name = compute_service_cost['service']
             self.cost_delivery = compute_service_cost['value']
             self.etd = compute_service_cost['etd']
-            print(json.dumps(parsed_response, indent=2))
-        except json.decoder.JSONDecodeError as e:
-            print("Failed to parse response as JSON:", e)
-        return True
+            self.origin_courier = resolved_courier
+            return True
+        except requests.exceptions.Timeout as e:
+            raise UserError('Shipping API timeout: %s' % e)
+        except requests.exceptions.RequestException as e:
+            raise UserError('Shipping API request failed: %s' % e)
 
 class SaleOrderLine(models.Model):
     _inherit = 'sale.order.line'

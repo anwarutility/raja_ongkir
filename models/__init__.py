@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from . import api
+from . import ongkir_utils
 from . import province
 from . import city
 from . import subdistrict

@@ -2,10 +2,10 @@
   <data>
 
     <record id="api_list_view_form" model="ir.ui.view">
-      <field name="name">API Raja Ongkir</field>
+      <field name="name">Biteship API</field>
       <field name="model">api.list</field>
       <field name="arch" type="xml">
-        <form string="API Raja Ongkir">
+        <form string="Biteship API">
           <header>
             <button name="sync_province" string="Sync Province" type="object" class="btn-primary"/>
             <button name="sync_city" string="Sync City" type="object" class="btn-primary"/>
@@ -32,11 +32,13 @@
                 <field name="api_key" attrs="{
                       'readonly': [('status', '=', 'enable'),],
                       'required': [('status', '=', 'disable')],
-                      }"/>
+                      }"
+                      help="RajaOngkir / Komerce API key. Untuk Biteship, isi API Key Biteship (prefix biteship_live. / biteship_test.)."/>
                 <field name="api_url" attrs="{
                       'readonly': [('status', '=', 'enable'),],
                       'required': [('status', '=', 'disable')],
-                      }"/>
+                      }"
+                      help="RajaOngkir/Komerce: https://pro.rajaongkir.com atau https://rajaongkir.komerce.id/api/v1. Biteship: https://api.biteship.com"/>
               </group>
               <group name="origin_destination" string="Origin and Destination">
                 <field name="origin_city_type_default" attrs="{
@@ -55,6 +57,9 @@
                 <field name="origin_courier" attrs="{
                       'readonly': [('status', '=', 'enable')],
                       'required': [('status', '=', 'disable')],
+                      }"/>
+                <field name="service" attrs="{
+                      'readonly': [('status', '=', 'enable')],
                       }"/>
                 <field name="destination_city_type_default" attrs="{
                       'readonly': [('status', '=', 'enable'),],
@@ -84,7 +89,7 @@
     </record>
 
     <record id="api_form" model="ir.ui.view">
-      <field name="name">API Raja Ongkir</field>
+      <field name="name">Biteship API</field>
       <field name="model">api.list</field>
       <field name="arch" type="xml">
         <tree>
@@ -92,19 +97,20 @@
           <field name="api_key"/>
           <field name="api_url"/>
           <field name="status"/>
+          <field name="service"/>
         </tree>
       </field>
     </record>
 
     <record id="api_menu_list_window" model="ir.actions.act_window">
-      <field name="name">Api Raja Ongkir</field>
+      <field name="name">Biteship API</field>
       <field name="res_model">api.list</field>
       <field name="type">ir.actions.act_window</field>
       <field name="view_mode">tree,form</field>
     </record>
 
     <menuitem id="menu_rajaongkir_config"
-              name="Raja Ongkir"
+              name="Biteship"
               parent="stock.menu_stock_config_settings"
               sequence="1"/>
 
