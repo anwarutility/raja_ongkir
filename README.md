@@ -19,6 +19,18 @@ Tiga provider didukung, **dipilih otomatis dari field `api_url`**:
 > memakai tarif versinya sendiri, dan API RajaOngkir resmi
 > (`pro.rajaongkir.com`) tidak dapat dijangkau dari server ini.
 
+## Lingkungan & Database
+
+Modul ini dipasang di dua instansi Odoo dengan database yang berbeda:
+
+| Server/Instansi | Database Yang Dipakai |
+|---|---|
+| **AGI** (Production PT Aston Graphindo Indonesia) | `agi` |
+| **ASN** | `based` |
+
+> Saat update/upgrade modul, jalankan pada database sesuai instansi:
+> `-d agi` di server AGI, atau `-d based` di server ASN.
+
 ## Fitur
 
 - Cek ongkos kirim dari **Sales Order** (estimasi biaya kirim) dan **Delivery Order** (estimasi + biaya realisasi).
